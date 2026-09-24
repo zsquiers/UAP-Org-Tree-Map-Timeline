@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UAP Atlas</title>
+<title>UAP Eye</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
@@ -245,7 +245,7 @@ if(window.claude&&window.claude.use){window.claude.use("artifact").then(function
 
 var nSec=MAP.pins.filter(function(p){return p.c==="sec"}).length;var nMil=MAP.pins.filter(function(p){return p.c==="mil"}).length,nUap=MAP.pins.filter(function(p){return p.c==="uap"}).length,nGov=MAP.pins.filter(function(p){return p.c==="gov"}).length,nCiv=MAP.pins.filter(function(p){return p.c==="civ"}).length;
 document.body.insertAdjacentHTML("beforeend",
-'<header><h1><span class="brand">UAP Atlas</span><span class="vt" id="vt">Who runs UAP work in the U.S. government</span></h1>'+
+'<header><h1><span class="brand">UAP Eye</span><span class="vt" id="vt">Who runs UAP work in the U.S. government</span></h1>'+
 '<div class="srch" role="search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.6 10.6L14.5 14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="Search people, places, programs" aria-label="Search people, places, and programs" autocomplete="off" spellcheck="false" role="combobox" aria-controls="qr" aria-expanded="false" aria-autocomplete="list"><div id="qr" role="listbox" aria-label="Search results" hidden></div></div>'+
 '<div class="tools"><div class="seg" role="group" aria-label="View"><button id="mt" aria-pressed="true">Org chart</button><button id="mm" aria-pressed="false">Map</button><button id="ml" aria-pressed="false">Timeline</button></div>'+
 '<button class="sq" id="zo" aria-label="Zoom out">&minus;</button><button class="sq" id="zi" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>'+
@@ -719,7 +719,7 @@ function buildDoc(){
   var css=document.getElementById("css").textContent,app=document.getElementById("app").textContent,geo=document.getElementById("geolib").textContent,md=document.getElementById("mapdata").textContent,mdet=document.getElementById("mapdetail").textContent;
   var json=JSON.stringify(state).replace(/</g,"\\u003c");
   var S="scr"+"ipt";
-  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>UAP Atlas</title>\n'+
+  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>UAP Eye</title>\n'+
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
   '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">\n'+
   '<style id="css">'+css+'</style>\n</head>\n<body>\n<'+S+' id="state" type="application/json">'+json+'</'+S+'>\n<'+S+' id="geolib">'+geo+'</'+S+'>\n<'+S+' id="mapdata" type="application/json">'+md.replace(/</g,"\\u003c")+'</'+S+'>\n<'+S+' id="mapdetail" type="application/json">'+mdet.replace(/</g,"\\u003c")+'</'+S+'>\n<'+S+' id="app">'+app+'</'+S+'>\n</body>\n</html>\n';
