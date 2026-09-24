@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UAP offices in the U.S. government</title>
+<title>UAP Atlas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
@@ -16,7 +16,8 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,"Helvetica Neue",Arial,sans-serif;font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
 header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--hair);background:var(--bg);position:relative;z-index:3}
-h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:21px;letter-spacing:.01em;margin:0 auto 0 0;line-height:1.15}
+h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:21px;letter-spacing:.01em;margin:0 auto 0 0;line-height:1.15;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:12px}
+h1 .vt{font-family:Barlow,"Helvetica Neue",Arial,sans-serif;font-weight:400;font-style:normal;font-size:14px;letter-spacing:0;color:var(--ink2)}
 .tools{display:flex;gap:6px;align-items:center}
 button{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--hair);border-radius:6px;padding:6px 11px;cursor:pointer;min-height:36px}
 button:hover{border-color:var(--line)}
@@ -180,7 +181,7 @@ header>.tb{min-height:36px}
 .conn .cv{grid-row:1/3;align-self:center;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);width:74px}
 .conn .ct{font-weight:600}
 .conn .cw{font-size:12.5px;color:var(--ink2)}
-@media (max-width:640px){.srch{order:1;flex:1 1 100%}header>.tb{order:2}}
+@media (max-width:640px){.srch{order:1;flex:1 1 100%}header>.tb{order:2;min-height:0}}
 </style>
 </head>
 <body>
@@ -244,7 +245,7 @@ if(window.claude&&window.claude.use){window.claude.use("artifact").then(function
 
 var nSec=MAP.pins.filter(function(p){return p.c==="sec"}).length;var nMil=MAP.pins.filter(function(p){return p.c==="mil"}).length,nUap=MAP.pins.filter(function(p){return p.c==="uap"}).length,nGov=MAP.pins.filter(function(p){return p.c==="gov"}).length,nCiv=MAP.pins.filter(function(p){return p.c==="civ"}).length;
 document.body.insertAdjacentHTML("beforeend",
-'<header><h1>UAP offices in the U.S. government</h1>'+
+'<header><h1><span class="brand">UAP Atlas</span><span class="vt" id="vt">Who runs UAP work in the U.S. government</span></h1>'+
 '<div class="srch" role="search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.6 10.6L14.5 14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="Search people, places, programs" aria-label="Search people, places, and programs" autocomplete="off" spellcheck="false" role="combobox" aria-controls="qr" aria-expanded="false" aria-autocomplete="list"><div id="qr" role="listbox" aria-label="Search results" hidden></div></div>'+
 '<div class="tools"><div class="seg" role="group" aria-label="View"><button id="mt" aria-pressed="true">Org chart</button><button id="mm" aria-pressed="false">Map</button><button id="ml" aria-pressed="false">Timeline</button></div>'+
 '<button class="sq" id="zo" aria-label="Zoom out">&minus;</button><button class="sq" id="zi" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>'+
@@ -405,6 +406,7 @@ function renderTimeline(){
 var pos={},bounds={w:0,h:0},showLin=false,selId=null,mode="tree",placing=false;
 var views={tree:null,map:null},tx=0,ty=0,k=1;
 var filt={gov:true,mil:true,uap:true,sec:true,civ:true,mine:true};
+var SUBS={tree:"Who runs UAP work in the U.S. government",map:"Bases, sightings, and secret sites around the world",timeline:"Programs, incidents, and books since 1940"};
 var HINTS={tree:"Drag to pan, pinch or scroll to zoom. Tap any box for details and notes.",map:"Drag to spin the globe, scroll or pinch to zoom. Over the U.S., county lines and then town lines appear as you zoom in. Pins mark major sites and notable cases, not every one.",timeline:"Drag sideways to travel through time. Tap any bar or event for details and links to the org chart and map."};
 
 function treeAll(){return BASE.concat(state.custom.map(function(c){return {id:c.id,p:c.p,t:c.t,s:c.s||"",k:"custom",d:[],custom:"tree"}}))}
@@ -472,7 +474,7 @@ function focusItem(id){if(mode==="timeline"){var t=tlPos[id];if(t)focusAt(t.cx,t
 function setMode(m){if(m===mode)return;cancelAnimationFrame(gAnim);views[mode]={tx:tx,ty:ty,k:k,lon:gLon,lat:gLat,ox:gox,oy:goy};closePanel(true);placing=false;vp.classList.remove("placing");
   mode=m;["tree","map","timeline"].forEach(function(x){document.body.classList.toggle("mode-"+x,m===x)});
   document.getElementById("mt").setAttribute("aria-pressed",m==="tree");document.getElementById("mm").setAttribute("aria-pressed",m==="map");document.getElementById("ml").setAttribute("aria-pressed",m==="timeline");
-  hint.textContent=HINTS[m];document.getElementById("addpin").textContent="Add a pin";render();
+  hint.textContent=HINTS[m];document.getElementById("vt").textContent=SUBS[m];document.getElementById("addpin").textContent="Add a pin";render();
   if(views[m]){tx=views[m].tx;ty=views[m].ty;k=views[m].k;if(m==="map"){gLon=views[m].lon;gLat=views[m].lat;gox=views[m].ox;goy=views[m].oy;}apply();}else fit();}
 document.getElementById("mt").onclick=function(){setMode("tree")};
 document.getElementById("mm").onclick=function(){setMode("map")};
@@ -717,7 +719,7 @@ function buildDoc(){
   var css=document.getElementById("css").textContent,app=document.getElementById("app").textContent,geo=document.getElementById("geolib").textContent,md=document.getElementById("mapdata").textContent,mdet=document.getElementById("mapdetail").textContent;
   var json=JSON.stringify(state).replace(/</g,"\\u003c");
   var S="scr"+"ipt";
-  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>UAP offices in the U.S. government</title>\n'+
+  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>UAP Atlas</title>\n'+
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
   '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">\n'+
   '<style id="css">'+css+'</style>\n</head>\n<body>\n<'+S+' id="state" type="application/json">'+json+'</'+S+'>\n<'+S+' id="geolib">'+geo+'</'+S+'>\n<'+S+' id="mapdata" type="application/json">'+md.replace(/</g,"\\u003c")+'</'+S+'>\n<'+S+' id="mapdetail" type="application/json">'+mdet.replace(/</g,"\\u003c")+'</'+S+'>\n<'+S+' id="app">'+app+'</'+S+'>\n</body>\n</html>\n';
