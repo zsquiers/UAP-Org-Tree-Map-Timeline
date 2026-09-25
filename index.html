@@ -412,7 +412,7 @@ function gDraw(){gQueued=false;if(mode!=="map"||!gW)return;if(SAT){satPins();ret
   c.beginPath();if(hi){path(d.land5);path(d.usn);}else path(d.land1);c.fillStyle="#D9C7A0";c.fill();c.strokeStyle="#6B5536";c.lineWidth=hi?0.9:0.7;c.stroke();
   c.beginPath();path(hi?d.bord5:d.bord1);c.setLineDash([3,2.5]);c.strokeStyle="rgba(98,76,46,.9)";c.lineWidth=0.8;c.stroke();c.setLineDash([]);
   var bb=k>=4?gView():null;gVB=bb;
-  if(k>=KT){c.beginPath();gDrawSet(gTowns(),bb,true);c.fillStyle="rgba(160,110,55,.16)";c.fill();c.strokeStyle="rgba(125,88,45,.65)";c.lineWidth=0.6;c.stroke();}
+  if(k>=KT){c.beginPath();gDrawSet(gTowns(),bb,true);c.strokeStyle="rgba(125,88,45,.65)";c.lineWidth=0.6;c.stroke();}
   if(k>=KS){c.beginPath();gDrawSet(gSubs(),bb);c.strokeStyle="rgba(98,76,46,.32)";c.lineWidth=0.5;c.stroke();}
   if(k>=KC){c.beginPath();gDrawSet(d.counties,bb);c.strokeStyle="rgba(98,76,46,.5)";c.lineWidth=0.6;c.stroke();}
   c.beginPath();gDrawSet(d.states,bb);c.strokeStyle="rgba(98,76,46,.8)";c.lineWidth=k>=KC?1.2:0.6;c.stroke();
