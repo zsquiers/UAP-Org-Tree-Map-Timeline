@@ -646,7 +646,9 @@ function apply(){if(mode==="map"){gQueue();return;}var el={tree:world,timeline:d
   var g=40*k;vp.style.backgroundSize=g+"px "+g+"px";vp.style.backgroundPosition=tx+"px "+ty+"px";}
 function dims(){return mode==="tree"?bounds:mode==="map"?{w:MW+40,h:MH+40}:tlBounds}
 function fit(){if(mode==="map"&&SAT&&satMap){satMap.flyTo({center:satMap.getCenter(),zoom:kToZ(1),duration:RM?0:800});return;}if(mode==="map"){cancelAnimationFrame(gAnim);k=1;gox=0;goy=0;apply();return;}var r=vp.getBoundingClientRect(),b=dims();if(mode==="timeline"){k=Math.max(0.35,Math.min(1,(r.height-20)/b.h));tx=b.w*k<r.width?(r.width-b.w*k)/2:0;ty=8;apply();return;}k=Math.min(r.width/b.w,r.height/b.h,mode==="tree"?1.2:3);k=Math.max(k,0.15);tx=(r.width-b.w*k)/2+(mode==="map"?20*k:0);ty=Math.max(8,(r.height-b.h*k)/2)+(mode==="map"?20*k:0);apply();}
-function zoomAt(f,cx,cy){if(mode==="map"&&SAT&&satMap){satMap.zoomTo(satMap.getZoom()+Math.log2(f),{duration:RM?0:250});return;}if(mode==="map"){cancelAnimationFrame(gAnim);gZoom(f,cx,cy);return;}var nk=Math.min(mode==="map"?40:3,Math.max(0.15,k*f));f=nk/k;tx=cx-(cx-tx)*f;ty=cy-(cy-ty)*f;k=nk;apply();}
+/* the org chart can't zoom out past the whole-chart view that Fit shows */
+function treeFitK(){var r=vp.getBoundingClientRect();return Math.max(0.15,Math.min(r.width/bounds.w,r.height/bounds.h,1.2))}
+function zoomAt(f,cx,cy){if(mode==="map"&&SAT&&satMap){satMap.zoomTo(satMap.getZoom()+Math.log2(f),{duration:RM?0:250});return;}if(mode==="map"){cancelAnimationFrame(gAnim);gZoom(f,cx,cy);return;}var nk=Math.min(mode==="map"?40:3,Math.max(mode==="tree"?treeFitK():0.15,k*f));f=nk/k;tx=cx-(cx-tx)*f;ty=cy-(cy-ty)*f;k=nk;apply();}
 function center(){var r=vp.getBoundingClientRect();return [r.width/2,r.height/2]}
 function focusAt(x,y,minK){var r=vp.getBoundingClientRect();var wide=r.width>640;
   var cx=wide?(r.width-Math.min(380,r.width))/2:r.width/2,cy=wide?r.height/2:r.height*0.2;
