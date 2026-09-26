@@ -581,27 +581,54 @@ function renderTree(){
     el.innerHTML='<p class="t">'+esc(n.t)+'</p>'+(n.s?'<p class="s">'+esc(n.s)+'</p>':'')+(state.notes[n.id]?'<i class="dot" title="Has your notes"></i>':'');
     world.appendChild(el);heights[n.id]=el.offsetHeight||78;
   });
-  var depthH={};
-  (function md(id,d){depthH[d]=Math.max(depthH[d]||0,heights[id]);kids(list,id).forEach(function(c){md(c.id,d+1)})})("gov",0);
-  var depthY={0:PAD};for(var d=1;depthH[d];d++)depthY[d]=depthY[d-1]+depthH[d-1]+VGAP;
-  pos={};
+  /* boxes with no branches of their own are stacked in one indented column under their parent, and a parent whose
+     children only have such boxes below them shows its whole branch as an indented outline split into a few columns,
+     so the chart grows downward instead of sideways */
+  var IND=30,SG=12,rowH={};
+  function isLeaf(id){return !kids(list,id).length}
+  function shallow(id){return kids(list,id).every(function(c){return isLeaf(c.id)})}
+  function outlineParent(id){var ch=kids(list,id);return ch.length>1&&ch.some(function(c){return !isLeaf(c.id)})&&ch.every(function(c){return shallow(c.id)})}
+  (function md(id,d){rowH[d]=Math.max(rowH[d]||0,heights[id]);if(outlineParent(id))return;kids(list,id).forEach(function(c){if(!isLeaf(c.id))md(c.id,d+1)})})("gov",0);
+  var depthY={0:PAD};for(var d=1;d<40;d++)depthY[d]=depthY[d-1]+(rowH[d-1]||0)+VGAP;
+  pos={};var edges="",bottom=0;
+  function tick(spine,mids,left){var p='<path class="e" d="M'+spine+' '+mids[0]+'V'+mids[mids.length-1]+'"/>';mids.forEach(function(m){p+='<path class="e" d="M'+spine+' '+m+'H'+left+'"/>'});return p}
+  function column(leaves,d){var x=nx,y=depthY[d],mids=[];
+    leaves.forEach(function(c){pos[c.id]={x:x+IND,y:y,d:d};mids.push(y+heights[c.id]/2);bottom=Math.max(bottom,y+heights[c.id]);y+=heights[c.id]+SG;});
+    nx+=W+IND+GAP;return {x:x+14,mids:mids,left:x+IND}}
+  function outline(ch,d){var total=0;ch.forEach(function(c){total+=1+kids(list,c.id).length});
+    var ncol=Math.max(1,Math.ceil(total/7)),cap=Math.ceil(total/ncol),groups=[[]],cnt=0;
+    ch.forEach(function(c){var n=1+kids(list,c.id).length;if(cnt&&cnt+n>cap&&groups.length<ncol){groups.push([]);cnt=0;}groups[groups.length-1].push(c);cnt+=n;});
+    return groups.map(function(g){var x=nx,y=depthY[d],mids=[];
+      g.forEach(function(c){var h=heights[c.id],lv=kids(list,c.id),lm=[];pos[c.id]={x:x+IND,y:y,d:d};mids.push(y+h/2);var cb=y+h;y+=h+SG;
+        lv.forEach(function(l){pos[l.id]={x:x+2*IND,y:y,d:d+1};lm.push(y+heights[l.id]/2);y+=heights[l.id]+SG;});
+        if(lm.length)edges+='<path class="e" d="M'+(x+IND+14)+' '+cb+'V'+lm[0]+'"/>'+tick(x+IND+14,lm,x+2*IND);
+        bottom=Math.max(bottom,y-SG);});
+      nx+=W+2*IND+GAP;return {x:x+14,mids:mids,left:x+IND}})}
   (function lay(id,d){
-    var ch=kids(list,id);
-    if(!ch.length){pos[id]={x:nx,y:depthY[d],d:d};nx+=W+GAP;}
-    else{ch.forEach(function(c){lay(c.id,d+1)});pos[id]={x:(pos[ch[0].id].x+pos[ch[ch.length-1].id].x)/2,y:depthY[d],d:d};}
+    var ch=kids(list,id),slots=[];
+    if(!ch.length){pos[id]={x:nx,y:depthY[d],d:d};nx+=W+GAP;bottom=Math.max(bottom,depthY[d]+heights[id]);return;}
+    if(outlineParent(id))outline(ch,d+1).forEach(function(c){slots.push({col:c})});
+    else{var leaves=ch.filter(function(c){return isLeaf(c.id)});if(leaves.length)slots.push({col:column(leaves,d+1)});
+      ch.forEach(function(c){if(!isLeaf(c.id)){lay(c.id,d+1);slots.push({id:c.id})}});}
+    var xs=slots.map(function(sl){return sl.col?sl.col.x-14:pos[sl.id].x});
+    var px=slots.length>1?(xs[0]+xs[xs.length-1])/2:xs[0];
+    pos[id]={x:px,y:depthY[d],d:d};bottom=Math.max(bottom,depthY[d]+heights[id]);
+    var x1=px+W/2,y1=depthY[d]+heights[id],my=y1+VGAP/2;
+    slots.forEach(function(sl){
+      if(sl.col){var c=sl.col;edges+='<path class="e" d="M'+x1+' '+y1+'V'+my+'H'+c.x+'V'+c.mids[0]+'"/>'+tick(c.x,c.mids,c.left);}
+      else{var b=pos[sl.id];edges+='<path class="e" d="M'+x1+' '+y1+'V'+my+'H'+(b.x+W/2)+'V'+b.y+'"/>';}});
   })("gov",0);
-  var maxD=0;for(var q in pos)maxD=Math.max(maxD,pos[q].d);
-  bounds={w:nx-GAP+PAD,h:depthY[maxD]+depthH[maxD]+PAD};
+  bounds={w:nx-GAP+PAD,h:bottom+PAD};
   world.querySelectorAll(".node").forEach(function(el){var p=pos[el.dataset.id];if(!p){el.remove();return;}el.style.left=p.x+"px";el.style.top=p.y+"px";});
   svg.setAttribute("width",bounds.w);svg.setAttribute("height",bounds.h);
-  var paths="";
-  list.forEach(function(n){if(!n.p||!pos[n.p]||!pos[n.id])return;var a=pos[n.p],b=pos[n.id];
-    var x1=a.x+W/2,y1=a.y+heights[n.p],x2=b.x+W/2,y2=b.y,my=y1+VGAP/2;
-    paths+='<path class="e" d="M'+x1+' '+y1+'V'+my+'H'+x2+'V'+y2+'"/>';});
+  var paths=edges;
+  /* lineage curves run along the sides of the boxes: a bulge to the right within a column, side to side between columns */
   if(showLin){for(var i=0;i<LINEAGE.length-1;i++){var A=pos[LINEAGE[i]],B=pos[LINEAGE[i+1]];if(!A||!B)continue;
-    var ax=A.x+W/2,ay=A.y+heights[LINEAGE[i]],bx=B.x+W/2,by=B.y+heights[LINEAGE[i+1]];
-    var low=Math.max(ay,by)+34+i*6;
-    paths+='<path class="lin" d="M'+ax+' '+ay+'C'+ax+' '+low+' '+bx+' '+low+' '+bx+' '+by+'"/>';}}
+    var am=A.y+heights[LINEAGE[i]]/2,bm=B.y+heights[LINEAGE[i+1]]/2,dd;
+    if(Math.abs(A.x-B.x)<5){var xr=A.x+W,bulge=40+Math.min(40,Math.abs(bm-am)/6);dd='M'+xr+' '+am+'C'+(xr+bulge)+' '+am+' '+(xr+bulge)+' '+bm+' '+xr+' '+bm;}
+    else if(B.x<A.x){dd='M'+A.x+' '+am+'C'+(A.x-40)+' '+am+' '+(B.x+W+40)+' '+bm+' '+(B.x+W)+' '+bm;}
+    else{dd='M'+(A.x+W)+' '+am+'C'+(A.x+W+40)+' '+am+' '+(B.x-40)+' '+bm+' '+B.x+' '+bm;}
+    paths+='<path class="lin" d="'+dd+'"/>';}}
   svg.innerHTML=paths;
 }
 function visible(p){if(p.c==="mil")return filt.mil||(filt.uap&&p.u);return filt[p.c];}
