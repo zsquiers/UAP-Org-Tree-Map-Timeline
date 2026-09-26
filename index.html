@@ -369,8 +369,8 @@ function satInit(){
     style:{version:8,projection:{type:"globe"},
       sky:{"atmosphere-blend":["interpolate",["linear"],["zoom"],0,1,5,1,7,0]},
       sources:{img:esri("World_Imagery","Imagery &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"),
-        roads:esri("Reference/World_Transportation","Roads &copy; Esri"),ref:esri("Reference/World_Boundaries_and_Places","Places &copy; Esri")},
-      layers:[{id:"img",type:"raster",source:"img"},{id:"roads",type:"raster",source:"roads",minzoom:8,paint:{"raster-opacity":0.75}},{id:"ref",type:"raster",source:"ref"}]}});
+        ref:esri("Reference/World_Boundaries_and_Places","Places &copy; Esri")},
+      layers:[{id:"img",type:"raster",source:"img"},{id:"ref",type:"raster",source:"ref"}]}});
   satMap.on("move",gQueue);satMap.on("load",gQueue);
   satMap.on("click",function(e){if(placing)placePin(e.lngLat.lng,e.lngLat.lat);});}
 function satPins(){if(!satMap||!SAT||mode!=="map")return;var c=satMap.getCenter(),l0=c.lng*DEG,sp0=Math.sin(c.lat*DEG),cp0=Math.cos(c.lat*DEG),
