@@ -371,8 +371,19 @@ function satInit(){
       sources:{img:esri("World_Imagery","Imagery &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"),
         ref:esri("Reference/World_Boundaries_and_Places","Places &copy; Esri")},
       layers:[{id:"img",type:"raster",source:"img"},{id:"ref",type:"raster",source:"ref"}]}});
-  satMap.on("move",gQueue);satMap.on("load",gQueue);
+  satMap.on("move",gQueue);satMap.on("load",function(){gQueue();satLines();});satMap.on("zoomend",satLines);
   satMap.on("click",function(e){if(placing)placePin(e.lngLat.lng,e.lngLat.lat);});}
+/* our own town and township lines on top of the photos (Esri's overlay only has state and county borders);
+   built the first time someone zooms in far enough to see them */
+var satLinesDone=false;
+function satLinesFC(){var T=gDet(),lines=[];
+  function dec(str,close){str.split(";").forEach(function(r){var n=r.match(/-?\d+/g);if(!n)return;var x=+n[0],y=+n[1],seg=[[x/1e4,y/1e4]];
+    for(var i=2;i+1<n.length;i+=2){x+=+n[i];y+=+n[i+1];seg.push([x/1e4,y/1e4])}if(close)seg.push(seg[0]);if(seg.length>1)lines.push(seg);})}
+  Object.keys(T.cousub||{}).forEach(function(k){dec(T.cousub[k],false)});Object.keys(T.towns||{}).forEach(function(k){dec(T.towns[k],true)});
+  return {type:"FeatureCollection",features:[{type:"Feature",properties:{},geometry:{type:"MultiLineString",coordinates:lines}}]}}
+function satLines(){if(satLinesDone||!satMap||!satMap.isStyleLoaded()||satMap.getZoom()<7)return;satLinesDone=true;
+  satMap.addSource("towns",{type:"geojson",data:satLinesFC(),tolerance:0.5});
+  satMap.addLayer({id:"towns",type:"line",source:"towns",minzoom:8,paint:{"line-color":"rgba(255,248,230,.6)","line-width":["interpolate",["linear"],["zoom"],8,0.4,12,0.9,15,1.4]}});}
 function satPins(){if(!satMap||!SAT||mode!=="map")return;var c=satMap.getCenter(),l0=c.lng*DEG,sp0=Math.sin(c.lat*DEG),cp0=Math.cos(c.lat*DEG),
     occ=satMap.transform&&satMap.transform.isLocationOccluded,boxes=[],lab=satMap.getZoom()>=kToZ(1.4);
   for(var i=0;i<PINS.length;i++){var o=PINS[i],ph=o.p.lat*DEG,dl=o.p.lon*DEG-l0,front=sp0*Math.sin(ph)+cp0*Math.cos(ph)*Math.cos(dl)>0.05;
