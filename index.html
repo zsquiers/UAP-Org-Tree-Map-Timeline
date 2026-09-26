@@ -396,7 +396,7 @@ function kToZ(kk){return Math.log2(2*Math.PI*Math.min(gW,gH)*0.42*kk/512)}
 function zToK(z){return 512*Math.pow(2,z)/(2*Math.PI)/(Math.min(gW,gH)*0.42)}
 function satInit(){
   function esri(path,att){return {type:"raster",tiles:[ESRI+path+"/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19,attribution:att}}
-  satMap=new maplibregl.Map({container:"sat",center:[gLon,gLat],zoom:kToZ(k),attributionControl:{compact:true},
+  satMap=new maplibregl.Map({container:"sat",center:[gLon,gLat],zoom:kToZ(k),maxPitch:85,attributionControl:{compact:true},
     style:{version:8,projection:{type:"globe"},
       sky:{"sky-color":"#040812","horizon-color":"#1B2B45","fog-color":"#0B1629","sky-horizon-blend":0.6,"horizon-fog-blend":0.7,"fog-ground-blend":0.9,"atmosphere-blend":["interpolate",["linear"],["zoom"],0,1,5,1,7,0]},
       sources:{img:esri("World_Imagery","Imagery &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"),
