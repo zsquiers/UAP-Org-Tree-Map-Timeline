@@ -540,7 +540,7 @@ function layoutTL(){
   bars.forEach(function(e){var x=yx(e.y1),w=Math.max(yx(e.y2+(e.ongoing?0:1))-x,10),occ=x+Math.max(w,tw(e.t))+14,l=0;while(lanes[l]!==undefined&&lanes[l]>x)l++;lanes[l]=occ;tlPos[e.id]={x:x,y:BY+l*(BH+BG),w:w,h:BH,cx:x+Math.min(w,200)/2,cy:BY+l*(BH+BG)+BH/2};});
   var EY=BY+lanes.length*(BH+BG)+56,rows=[],EH=30,EG=8;
   evs.forEach(function(e){var x=yx(e.yr)+YW/2-7,lab=e.yr+"  "+e.t,occ=x+tw(lab)+10,l=0;while(rows[l]!==undefined&&rows[l]>x)l++;rows[l]=occ;tlPos[e.id]={x:x,y:EY+l*(EH+EG),h:EH,cx:x+60,cy:EY+l*(EH+EG)+EH/2,lab:lab};});
-  tlBounds={w:yx(TL_END)+TX0,h:EY+rows.length*(EH+EG)+50,ey:EY,by:BY};
+  tlBounds={w:Math.max(yx(TL_END)+TX0,Math.max.apply(null,rows.concat(lanes,[0]))+30),h:EY+rows.length*(EH+EG)+50,ey:EY,by:BY};
 }
 function renderTimeline(){
   var h='',g='';
@@ -642,7 +642,12 @@ function renderMap(){
 }
 function render(){if(mode==="tree")renderTree();else if(mode==="map")renderMap();else renderTimeline();}
 
-function apply(){if(mode==="map"){gQueue();return;}var el={tree:world,timeline:document.getElementById("tlw")}[mode];el.style.transform="translate("+tx+"px,"+ty+"px) scale("+k+")";
+/* keep the org chart and timeline on screen: a small margin past each edge, plus room for the details panel when it's open */
+function clampPan(){var r=vp.getBoundingClientRect(),b=dims();if(!b||!b.w)return;var m=60,cw=b.w*k,chh=b.h*k,po=panel.classList.contains("open"),
+    rp=po&&r.width>640?Math.min(380,r.width):0,bp=po&&r.width<=640?r.height*0.68:0,vw=r.width-rp,vh=r.height-bp;
+  if(cw<=vw-2*m)tx=Math.min(vw-cw-m,Math.max(m,tx));else tx=Math.min(m,Math.max(vw-cw-m,tx));
+  if(chh<=vh-2*m)ty=Math.min(vh-chh-m,Math.max(m,ty));else ty=Math.min(m,Math.max(vh-chh-m,ty));}
+function apply(){if(mode==="map"){gQueue();return;}clampPan();var el={tree:world,timeline:document.getElementById("tlw")}[mode];el.style.transform="translate("+tx+"px,"+ty+"px) scale("+k+")";
   var g=40*k;vp.style.backgroundSize=g+"px "+g+"px";vp.style.backgroundPosition=tx+"px "+ty+"px";}
 function dims(){return mode==="tree"?bounds:mode==="map"?{w:MW+40,h:MH+40}:tlBounds}
 function fit(){if(mode==="map"&&SAT&&satMap){satMap.flyTo({center:satMap.getCenter(),zoom:kToZ(1),duration:RM?0:800});return;}if(mode==="map"){cancelAnimationFrame(gAnim);k=1;gox=0;goy=0;apply();return;}var r=vp.getBoundingClientRect(),b=dims();if(mode==="timeline"){k=Math.max(0.35,Math.min(1,(r.height-20)/b.h));tx=b.w*k<r.width?(r.width-b.w*k)/2:0;ty=8;apply();return;}k=Math.min(r.width/b.w,r.height/b.h,mode==="tree"?1.2:3);k=Math.max(k,0.15);tx=(r.width-b.w*k)/2+(mode==="map"?20*k:0);ty=Math.max(8,(r.height-b.h*k)/2)+(mode==="map"?20*k:0);apply();}
