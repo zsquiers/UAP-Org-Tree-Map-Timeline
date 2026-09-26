@@ -100,7 +100,6 @@ body:not(.mode-tree) .treeonly,body:not(.mode-map) .maponly,body:not(.mode-timel
 #mapw{position:absolute;inset:0;overflow:hidden}
 #globe{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 #sat{position:absolute;inset:0;display:none;background:transparent}
-.terr{display:none}body.sat .terr{display:inline-flex}
 #terr[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber)}
 body.sat #sat{display:block}
 body.sat.mode-map .hint{bottom:40px}
@@ -398,7 +397,7 @@ function satInit(){
       sources:{img:esri("World_Imagery","Imagery &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"),
         ref:esri("Reference/World_Boundaries_and_Places","Places &copy; Esri")},
       layers:[{id:"img",type:"raster",source:"img"},{id:"ref",type:"raster",source:"ref"}]}});
-  satMap.on("move",gQueue);satMap.on("load",function(){satZones();gQueue();satLines();if(TERR)setTerrain(true);});satMap.on("zoomend",satLines);
+  satMap.on("move",gQueue);satMap.on("load",function(){satReady=true;satZones();gQueue();satLines();if(TERR)setTerrain(true);});satMap.on("zoomend",satLines);
   satMap.on("click",function(e){if(placing)placePin(e.lngLat.lng,e.lngLat.lat);});}
 /* our own town and township lines on top of the photos (Esri's overlay only has state and county borders);
    built the first time someone zooms in far enough to see them */
@@ -408,7 +407,7 @@ function satLinesFC(){var T=gDet(),lines=[];
     for(var i=2;i+1<n.length;i+=2){x+=+n[i];y+=+n[i+1];seg.push([x/1e4,y/1e4])}if(close)seg.push(seg[0]);if(seg.length>1)lines.push(seg);})}
   Object.keys(T.cousub||{}).forEach(function(k){dec(T.cousub[k],false)});Object.keys(T.towns||{}).forEach(function(k){dec(T.towns[k],true)});
   return {type:"FeatureCollection",features:[{type:"Feature",properties:{},geometry:{type:"MultiLineString",coordinates:lines}}]}}
-function satLines(){if(satLinesDone||!satMap||!satMap.isStyleLoaded()||satMap.getZoom()<7)return;satLinesDone=true;
+function satLines(){if(satLinesDone||!satMap||!satReady||satMap.getZoom()<7)return;satLinesDone=true;
   satMap.addSource("towns",{type:"geojson",data:satLinesFC(),tolerance:0.5});
   satMap.addLayer({id:"towns",type:"line",source:"towns",minzoom:8,paint:{"line-color":"rgba(255,248,230,.6)","line-width":["interpolate",["linear"],["zoom"],8,0.4,12,0.9,15,1.4]}});}
 function satPins(){if(!satMap||!SAT||mode!=="map")return;var c=satMap.getCenter(),l0=c.lng*DEG,sp0=Math.sin(c.lat*DEG),cp0=Math.cos(c.lat*DEG),
@@ -427,24 +426,32 @@ function setSat(on){var bm=document.getElementById("stMap"),bs=document.getEleme
   function mark(v){bm.setAttribute("aria-pressed",!v);bs.setAttribute("aria-pressed",v);}
   try{localStorage.setItem("watcher-mapstyle",on?"sat":"map")}catch(e){}
   if(on===SAT){mark(on);return;}
-  if(!on){SAT=false;mark(false);document.body.classList.remove("sat");
+  if(!on){SAT=false;mark(false);document.body.classList.remove("sat");if(TERR){TERR=false;document.getElementById("terr").setAttribute("aria-pressed",false);try{localStorage.setItem("watcher-terrain","off")}catch(e){}if(satMap){satMap.setTerrain(null);satMap.setPitch(0);}}
     if(satMap){var c=satMap.getCenter();gLon=gWrap(c.lng);gLat=gClampLat(c.lat);k=Math.min(KMAX,Math.max(KMIN,zToK(satMap.getZoom())));gox=0;goy=0;}
     PINS.forEach(function(o){o.v=null});gQueue();return;}
   mark(true);bs.textContent="Loading…";cancelAnimationFrame(gAnim);
   satLib().then(function(){bs.textContent="Satellite";SAT=true;document.body.classList.add("sat");
     if(!satMap)satInit();else{satMap.resize();satMap.jumpTo({center:[gLon,gLat],zoom:kToZ(k)});}
-    PINS.forEach(function(o){o.v=null});gQueue();if(selId&&mode==="map")focusItem(selId);
+    PINS.forEach(function(o){o.v=null});gQueue();if(selId&&mode==="map")focusItem(selId);if(TERR)setTerrain(true);
   }).catch(function(){bs.textContent="Satellite";mark(false);try{localStorage.setItem("watcher-mapstyle","map")}catch(e){}
     hint.textContent="Satellite view needs an internet connection. Showing the regular map.";});}
 /* 3D terrain on the satellite globe: free AWS Terrain Tiles elevation, raised a little so relief reads well */
-var TERR=false;
+var TERR=false,satReady=false;
 function terrWanted(){try{return localStorage.getItem("watcher-terrain")==="on"}catch(e){return false}}
+function terrEx(z){return z<6?4:z<9?2.6:z<12?1.8:1.4}
+var DEM_URL="https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png",DEM_ATT='Terrain &copy; <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen / AWS Terrain Tiles</a>';
 function setTerrain(on){TERR=on;document.getElementById("terr").setAttribute("aria-pressed",on);try{localStorage.setItem("watcher-terrain",on?"on":"off")}catch(e){}
-  if(!satMap)return;if(!satMap.isStyleLoaded()){satMap.once("load",function(){setTerrain(TERR)});return;}
-  if(on){if(!satMap.getSource("dem"))satMap.addSource("dem",{type:"raster-dem",tiles:["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],tileSize:256,encoding:"terrarium",maxzoom:14,
-      attribution:'Terrain &copy; <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen / AWS Terrain Tiles</a>'});
-    satMap.setTerrain({source:"dem",exaggeration:1.6});if(satMap.getPitch()<30)satMap.easeTo({pitch:60,duration:RM?0:1200});}
-  else{satMap.setTerrain(null);satMap.easeTo({pitch:0,duration:RM?0:800});}}
+  if(on&&!SAT){setSat(true);return;}
+  if(!satMap||!satReady)return;
+  if(on){if(!satMap.getSource("dem")){
+      satMap.addSource("dem",{type:"raster-dem",tiles:[DEM_URL],tileSize:256,encoding:"terrarium",maxzoom:14,attribution:DEM_ATT});
+      satMap.addSource("dem-shade",{type:"raster-dem",tiles:[DEM_URL],tileSize:256,encoding:"terrarium",maxzoom:14});
+      satMap.addLayer({id:"hillshade",type:"hillshade",source:"dem-shade",paint:{"hillshade-exaggeration":0.55,"hillshade-shadow-color":"#0A0A14","hillshade-highlight-color":"#FFF6E0","hillshade-accent-color":"#1A1A22"}},"ref");
+      satMap.on("zoomend",function(){if(TERR&&satMap.getTerrain())satMap.setTerrain({source:"dem",exaggeration:terrEx(satMap.getZoom())})});}
+    satMap.setLayoutProperty("hillshade","visibility","visible");
+    satMap.setTerrain({source:"dem",exaggeration:terrEx(satMap.getZoom())});
+    var z=satMap.getZoom();satMap.easeTo({pitch:Math.max(satMap.getPitch(),60),zoom:z<6.5?6.5:z,duration:RM?0:1400});}
+  else{satMap.setTerrain(null);if(satMap.getLayer("hillshade"))satMap.setLayoutProperty("hillshade","visibility","none");satMap.easeTo({pitch:0,duration:RM?0:800});}}
 function satWanted(){try{var v=localStorage.getItem("watcher-mapstyle");return v?v==="sat":true}catch(e){return true}}
 /* the real night sky behind the globe: stars, constellations, and the Milky Way, placed for the current time
    and for where the camera sits, so they swing past as the Earth turns */
