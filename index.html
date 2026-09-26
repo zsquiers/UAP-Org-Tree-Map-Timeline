@@ -100,6 +100,8 @@ body:not(.mode-tree) .treeonly,body:not(.mode-map) .maponly,body:not(.mode-timel
 #mapw{position:absolute;inset:0;overflow:hidden}
 #globe{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 #sat{position:absolute;inset:0;display:none;background:transparent}
+.terr{display:none}body.sat .terr{display:inline-flex}
+#terr[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber)}
 body.sat #sat{display:block}
 body.sat.mode-map .hint{bottom:40px}
 #sat .maplibregl-ctrl-attrib{font-size:11px}
@@ -282,7 +284,7 @@ document.body.insertAdjacentHTML("beforeend",
 '<div class="tools"><div class="seg" role="group" aria-label="View"><button id="mt" aria-pressed="true">Org chart</button><button id="mm" aria-pressed="false">Map</button><button id="ml" aria-pressed="false">Timeline</button></div>'+
 '<button class="sq" id="zo" aria-label="Zoom out">&minus;</button><button class="sq" id="zi" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>'+
 '<div class="tb"><button class="treeonly" id="lin" aria-pressed="false">Show lineage</button>'+
-'<span class="maponly tb" style="width:auto"><span class="seg" role="group" aria-label="Map style"><button id="stMap" aria-pressed="true">Map</button><button id="stSat" aria-pressed="false">Satellite</button></span><button class="chip" data-f="gov" aria-pressed="true">Government ('+nGov+')</button><button class="chip" data-f="mil" aria-pressed="true">Military ('+nMil+')</button><button class="chip" data-f="uap" aria-pressed="true">UAP and anomalies ('+nUap+')</button><button class="chip" data-f="sec" aria-pressed="true">Secret projects ('+nSec+')</button><button class="chip" data-f="civ" aria-pressed="true">Civilian groups ('+nCiv+')</button><button class="chip" data-f="mine" aria-pressed="true">Your pins</button><button id="addpin">Add a pin</button></span></div></header>'+
+'<span class="maponly tb" style="width:auto"><span class="seg" role="group" aria-label="Map style"><button id="stMap" aria-pressed="true">Map</button><button id="stSat" aria-pressed="false">Satellite</button></span><button id="terr" class="terr" aria-pressed="false" title="Raise mountains and tilt the view">3D terrain</button><button class="chip" data-f="gov" aria-pressed="true">Government ('+nGov+')</button><button class="chip" data-f="mil" aria-pressed="true">Military ('+nMil+')</button><button class="chip" data-f="uap" aria-pressed="true">UAP and anomalies ('+nUap+')</button><button class="chip" data-f="sec" aria-pressed="true">Secret projects ('+nSec+')</button><button class="chip" data-f="civ" aria-pressed="true">Civilian groups ('+nCiv+')</button><button class="chip" data-f="mine" aria-pressed="true">Your pins</button><button id="addpin">Add a pin</button></span></div></header>'+
 '<div id="vp"><div id="world"><svg id="edges"></svg></div>'+
 '<div id="mapw"><canvas id="globe" aria-hidden="true"></canvas><div id="sat"></div><div id="pins"></div></div>'+
 '<div id="tlw"><svg id="tlsvg" aria-hidden="true"></svg><div id="tlitems"></div></div>'+
@@ -392,11 +394,11 @@ function satInit(){
   function esri(path,att){return {type:"raster",tiles:[ESRI+path+"/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19,attribution:att}}
   satMap=new maplibregl.Map({container:"sat",center:[gLon,gLat],zoom:kToZ(k),attributionControl:{compact:true},
     style:{version:8,projection:{type:"globe"},
-      sky:{"atmosphere-blend":["interpolate",["linear"],["zoom"],0,1,5,1,7,0]},
+      sky:{"sky-color":"#040812","horizon-color":"#1B2B45","fog-color":"#0B1629","sky-horizon-blend":0.6,"horizon-fog-blend":0.7,"fog-ground-blend":0.9,"atmosphere-blend":["interpolate",["linear"],["zoom"],0,1,5,1,7,0]},
       sources:{img:esri("World_Imagery","Imagery &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"),
         ref:esri("Reference/World_Boundaries_and_Places","Places &copy; Esri")},
       layers:[{id:"img",type:"raster",source:"img"},{id:"ref",type:"raster",source:"ref"}]}});
-  satMap.on("move",gQueue);satMap.on("load",function(){satZones();gQueue();satLines();});satMap.on("zoomend",satLines);
+  satMap.on("move",gQueue);satMap.on("load",function(){satZones();gQueue();satLines();if(TERR)setTerrain(true);});satMap.on("zoomend",satLines);
   satMap.on("click",function(e){if(placing)placePin(e.lngLat.lng,e.lngLat.lat);});}
 /* our own town and township lines on top of the photos (Esri's overlay only has state and county borders);
    built the first time someone zooms in far enough to see them */
@@ -434,6 +436,15 @@ function setSat(on){var bm=document.getElementById("stMap"),bs=document.getEleme
     PINS.forEach(function(o){o.v=null});gQueue();if(selId&&mode==="map")focusItem(selId);
   }).catch(function(){bs.textContent="Satellite";mark(false);try{localStorage.setItem("watcher-mapstyle","map")}catch(e){}
     hint.textContent="Satellite view needs an internet connection. Showing the regular map.";});}
+/* 3D terrain on the satellite globe: free AWS Terrain Tiles elevation, raised a little so relief reads well */
+var TERR=false;
+function terrWanted(){try{return localStorage.getItem("watcher-terrain")==="on"}catch(e){return false}}
+function setTerrain(on){TERR=on;document.getElementById("terr").setAttribute("aria-pressed",on);try{localStorage.setItem("watcher-terrain",on?"on":"off")}catch(e){}
+  if(!satMap)return;if(!satMap.isStyleLoaded()){satMap.once("load",function(){setTerrain(TERR)});return;}
+  if(on){if(!satMap.getSource("dem"))satMap.addSource("dem",{type:"raster-dem",tiles:["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],tileSize:256,encoding:"terrarium",maxzoom:14,
+      attribution:'Terrain &copy; <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Mapzen / AWS Terrain Tiles</a>'});
+    satMap.setTerrain({source:"dem",exaggeration:1.6});if(satMap.getPitch()<30)satMap.easeTo({pitch:60,duration:RM?0:1200});}
+  else{satMap.setTerrain(null);satMap.easeTo({pitch:0,duration:RM?0:800});}}
 function satWanted(){try{var v=localStorage.getItem("watcher-mapstyle");return v?v==="sat":true}catch(e){return true}}
 /* the real night sky behind the globe: stars, constellations, and the Milky Way, placed for the current time
    and for where the camera sits, so they swing past as the Earth turns */
@@ -587,7 +598,7 @@ var pos={},bounds={w:0,h:0},showLin=false,selId=null,mode="tree",placing=false;
 var views={tree:null,map:null},tx=0,ty=0,k=1;
 var filt={gov:true,mil:true,uap:true,sec:true,civ:true,mine:true};
 var SUBS={tree:"Who runs UAP work in the U.S. government",map:"Bases, sightings, and secret sites around the world",timeline:"Programs, incidents, and books since 1940"};
-var HINTS={tree:"Drag to pan, pinch or scroll to zoom. Tap any box for details and notes.",map:"Drag to spin the globe, scroll or pinch to zoom. Place names, then U.S. county, township, and town lines, appear as you zoom in. Switch to Satellite for real imagery. Pins mark major sites and notable cases, not every one.",timeline:"Drag sideways to travel through time. Tap any bar or event for details and links to the org chart and map."};
+var HINTS={tree:"Drag to pan, pinch or scroll to zoom. Tap any box for details and notes.",map:"Drag to spin the globe, scroll or pinch to zoom. Place names, then U.S. county, township, and town lines, appear as you zoom in. Switch to Satellite for real imagery, and try 3D terrain (right-drag or two-finger drag to tilt). Pins mark major sites and notable cases, not every one.",timeline:"Drag sideways to travel through time. Tap any bar or event for details and links to the org chart and map."};
 
 function treeAll(){return BASE.concat(state.custom.map(function(c){return {id:c.id,p:c.p,t:c.t,s:c.s||"",k:"custom",d:[],custom:"tree"}}))}
 function pinAll(){return MAP.pins.concat(state.pins.map(function(p){return {id:p.id,c:"mine",t:p.t,s:p.s||"",lat:p.lat,lon:p.lon,d:[],custom:"pin"}}))}
@@ -696,7 +707,7 @@ document.getElementById("mt").onclick=function(){setMode("tree")};
 document.getElementById("mm").onclick=function(){setMode("map")};
 document.getElementById("ml").onclick=function(){setMode("timeline")};
 document.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){var f=c.dataset.f;filt[f]=!filt[f];c.setAttribute("aria-pressed",filt[f]);renderMap();}});
-document.getElementById("stMap").onclick=function(){setSat(false)};document.getElementById("stSat").onclick=function(){setSat(true)};
+document.getElementById("stMap").onclick=function(){setSat(false)};document.getElementById("terr").onclick=function(){setTerrain(!TERR)};TERR=terrWanted();document.getElementById("terr").setAttribute("aria-pressed",TERR);document.getElementById("stSat").onclick=function(){setSat(true)};
 document.getElementById("addpin").onclick=function(){placing=!placing;vp.classList.toggle("placing",placing);this.textContent=placing?"Cancel":"Add a pin";hint.textContent=placing?"Tap the globe where the new pin goes.":HINTS.map;};
 
 var ptrs=new Map(),moved=0,startDist=0,startK=1,downTarget=null,downPt=null;
