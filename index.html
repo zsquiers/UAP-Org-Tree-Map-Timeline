@@ -646,8 +646,9 @@ function renderTree(){
      so the chart grows downward instead of sideways */
   var IND=30,SG=12,rowH={};
   function isLeaf(id){return !kids(list,id).length}
-  function shallow(id){return kids(list,id).every(function(c){return isLeaf(c.id)})}
-  function outlineParent(id){var ch=kids(list,id);return ch.length>1&&ch.some(function(c){return !isLeaf(c.id)})&&ch.every(function(c){return shallow(c.id)})}
+  function depth(id){return kids(list,id).reduce(function(m,c){return Math.max(m,1+depth(c.id))},0)}
+  function size(id){return kids(list,id).reduce(function(m,c){return m+size(c.id)},1)}
+  function outlineParent(id){var ch=kids(list,id);return ch.length>1&&ch.some(function(c){return !isLeaf(c.id)})&&ch.every(function(c){return depth(c.id)<=2})}
   (function md(id,d){rowH[d]=Math.max(rowH[d]||0,heights[id]);if(outlineParent(id))return;kids(list,id).forEach(function(c){if(!isLeaf(c.id))md(c.id,d+1)})})("gov",0);
   var depthY={0:PAD};for(var d=1;d<40;d++)depthY[d]=depthY[d-1]+(rowH[d-1]||0)+VGAP;
   pos={};var edges="",bottom=0;
@@ -655,15 +656,17 @@ function renderTree(){
   function column(leaves,d){var x=nx,y=depthY[d],mids=[];
     leaves.forEach(function(c){pos[c.id]={x:x+IND,y:y,d:d};mids.push(y+heights[c.id]/2);bottom=Math.max(bottom,y+heights[c.id]);y+=heights[c.id]+SG;});
     nx+=W+IND+GAP;return {x:x+14,mids:mids,left:x+IND}}
-  function outline(ch,d){var total=0;ch.forEach(function(c){total+=1+kids(list,c.id).length});
+  function outline(ch,d){var total=0;ch.forEach(function(c){total+=size(c.id)});
     var ncol=Math.max(1,Math.ceil(total/7)),cap=Math.ceil(total/ncol),groups=[[]],cnt=0;
-    ch.forEach(function(c){var n=1+kids(list,c.id).length;if(cnt&&cnt+n>cap&&groups.length<ncol){groups.push([]);cnt=0;}groups[groups.length-1].push(c);cnt+=n;});
-    return groups.map(function(g){var x=nx,y=depthY[d],mids=[];
-      g.forEach(function(c){var h=heights[c.id],lv=kids(list,c.id),lm=[];pos[c.id]={x:x+IND,y:y,d:d};mids.push(y+h/2);var cb=y+h;y+=h+SG;
-        lv.forEach(function(l){pos[l.id]={x:x+2*IND,y:y,d:d+1};lm.push(y+heights[l.id]/2);y+=heights[l.id]+SG;});
-        if(lm.length)edges+='<path class="e" d="M'+(x+IND+14)+' '+cb+'V'+lm[0]+'"/>'+tick(x+IND+14,lm,x+2*IND);
-        bottom=Math.max(bottom,y-SG);});
-      nx+=W+2*IND+GAP;return {x:x+14,mids:mids,left:x+IND}})}
+    ch.forEach(function(c){var n=size(c.id);if(cnt&&cnt+n>cap&&groups.length<ncol){groups.push([]);cnt=0;}groups[groups.length-1].push(c);cnt+=n;});
+    return groups.map(function(g){var x=nx,y=depthY[d],mids=[],deep=1;
+      /* each box sits one indent right of its parent, with a spine from the parent down to its branches */
+      function place(c,lv){var h=heights[c.id],lm=[];pos[c.id]={x:x+lv*IND,y:y,d:d+lv-1};deep=Math.max(deep,lv);var mid=y+h/2,cb=y+h;y+=h+SG;
+        kids(list,c.id).forEach(function(k){lm.push(place(k,lv+1))});
+        if(lm.length)edges+='<path class="e" d="M'+(x+lv*IND+14)+' '+cb+'V'+lm[0]+'"/>'+tick(x+lv*IND+14,lm,x+(lv+1)*IND);
+        return mid}
+      g.forEach(function(c){mids.push(place(c,1));bottom=Math.max(bottom,y-SG);});
+      nx+=W+deep*IND+GAP;return {x:x+14,mids:mids,left:x+IND}})}
   (function lay(id,d){
     var ch=kids(list,id),slots=[];
     if(!ch.length){pos[id]={x:nx,y:depthY[d],d:d};nx+=W+GAP;bottom=Math.max(bottom,depthY[d]+heights[id]);return;}
