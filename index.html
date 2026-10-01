@@ -90,11 +90,20 @@ textarea{min-height:120px;resize:vertical}
 .chip{font-size:13px;padding:4px 10px;min-height:32px;border-radius:16px;display:inline-flex;align-items:center;gap:6px}
 .chip[aria-pressed="false"]{opacity:.55;text-decoration:line-through}
 .chip[aria-pressed="true"]{background:var(--card);border-color:var(--line);color:var(--ink)}
-#world,#mapw,#tlw{transition:opacity 2.4s ease-in-out,visibility 0s linear 0s}
-body:not(.mode-tree) #world,body:not(.mode-map) #mapw,body:not(.mode-timeline) #tlw{opacity:0;visibility:hidden;pointer-events:none;transition:opacity 2.4s ease-in-out,visibility 0s linear 2.4s}
-.node,.node .t,.node .s{transition:background-color 2.4s ease-in-out,color 2.4s ease-in-out,border-color 2.4s ease-in-out}
-.e{transition:stroke 2.4s ease-in-out}
-body,header,#vp,.legend,#panel,button,textarea,input,.pill,.pin .lb{transition:background-color 2.4s ease-in-out,color 2.4s ease-in-out,border-color 2.4s ease-in-out}
+#world,#mapw,#tlw{transition:opacity .25s ease-in-out,visibility 0s linear 0s}
+body:not(.mode-tree) #world,body:not(.mode-map) #mapw,body:not(.mode-timeline) #tlw{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease-in-out,visibility 0s linear .25s}
+.node,.node .t,.node .s{transition:background-color .25s ease-in-out,color .25s ease-in-out,border-color .25s ease-in-out}
+.e{transition:stroke .25s ease-in-out}
+body,header,#vp,.legend,#panel,textarea,input,.pill,.pin .lb{transition:background-color .25s ease-in-out,color .25s ease-in-out,border-color .25s ease-in-out}
+button{transition:background-color .12s ease-out,color .12s ease-out,border-color .12s ease-out}
+/* view changes: an eyelid blink, after the Watcher eye */
+#blink{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
+#blink.shut{pointer-events:auto}
+#blink i{position:absolute;left:-30%;width:160%;height:64%;background:#0A1120;transition:transform .2s cubic-bezier(.55,0,.8,.3)}
+#blink .lt{top:0;border-radius:0 0 50% 50%/0 0 42% 42%;transform:translateY(-104%);box-shadow:0 3px 0 rgba(233,196,120,.6)}
+#blink .lbt{bottom:0;border-radius:50% 50% 0 0/42% 42% 0 0;transform:translateY(104%);box-shadow:0 -3px 0 rgba(233,196,120,.6)}
+#blink.shut i{transform:translateY(0)}
+#blink.opening i{transition:transform .3s cubic-bezier(.15,.7,.3,1)}
 body.mode-map{--bg:#05070D;--grid:transparent;--ink:#EFE6D2;--ink2:#B3A88F;--card:#121826;--line:#8C7A56;--hair:rgba(239,230,210,.16);--panel:#0C111C;--focus:#F2C46D;--land:#D8C6A0;--mil:#6F9CC4;--civ:#5ED3C3;--amber:#FF7A45;--amber-bg:rgba(255,122,69,.15);--sec:#B98CFF;--sec-bg:#221A33}
 .mode-map h1,.mode-map .ph h2{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:600;letter-spacing:0}
 .mode-map h1{font-size:25px}
@@ -105,7 +114,7 @@ body.mode-map{--bg:#05070D;--grid:transparent;--ink:#EFE6D2;--ink2:#B3A88F;--car
 .mode-map .pin.mil.u .mk{box-shadow:0 0 0 2px var(--amber),0 1px 3px rgba(0,0,0,.6)}
 .mode-map .pin.uap .mk{box-shadow:0 0 9px 2px rgba(255,122,69,.55)}
 .mode-map .pin.sec .pk,.mode-map .pin.civ .pk{filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
-@media (prefers-reduced-motion:reduce){#world,#mapw,#tlw,.node,.e,body,header,#vp,.legend,#panel,button{transition:none!important}}
+@media (prefers-reduced-motion:reduce){#world,#mapw,#tlw,.node,.e,body,header,#vp,.legend,#panel,button{transition:none!important}#blink{display:none}}
 body:not(.mode-tree) .treeonly,body:not(.mode-map) .maponly,body:not(.mode-timeline) .tlonly{display:none!important}
 #mapw{position:absolute;inset:0;overflow:hidden}
 #globe{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
@@ -321,7 +330,7 @@ document.body.insertAdjacentHTML("beforeend",
 '<button class="sq" id="zo" aria-label="Zoom out">&minus;</button><button class="sq" id="zi" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>'+
 '<div class="tb"><button class="treeonly" id="lin" aria-pressed="false">Show lineage</button>'+
 '<span class="maponly tb" style="width:auto"><span class="seg" role="group" aria-label="Map style"><button id="stMap" aria-pressed="true">Map</button><button id="stSat" aria-pressed="false">Satellite</button></span><button id="terr" class="terr" aria-pressed="false" title="Raise mountains and buildings and tilt the view">3D terrain</button><button id="sun" class="terr" aria-pressed="true" title="Shade the side of the Earth where it is night right now">Day and night</button><button id="addpin">Add a pin</button></span></div></header>'+
-'<div id="vp"><div id="world"><svg id="edges"></svg></div>'+
+'<div id="blink" aria-hidden="true"><i class="lt"></i><i class="lbt"></i></div><div id="vp"><div id="world"><svg id="edges"></svg></div>'+
 '<div id="mapw"><canvas id="globe" aria-hidden="true"></canvas><div id="sat"></div><button id="compass" title="Face north" aria-label="Face north"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(239,230,210,.25)"/><g id="cneedle"><text x="26" y="13" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="10" fill="#FF7A45">N</text><path d="M26 15 L31 27 L26 25 L21 27 Z" fill="#FF7A45"/><path d="M26 39 L31 27 L26 29 L21 27 Z" fill="#EFE6D2"/></g></svg></button><div id="pins"></div></div>'+
 '<div id="tlw"><svg id="tlsvg" aria-hidden="true"></svg><div id="tlitems"></div></div>'+
 '<div class="legend treeonly"><span><i class="sw a"></i>Active UAP office</span><span><i class="sw c"></i>Closed program</span><span><i class="sw s"></i>Secret project</span><span><i class="sw"></i>Parent body</span><span id="lgl" hidden><i class="sw l"></i>Succeeded by</span></div>'+
@@ -801,14 +810,26 @@ function focusAt(x,y,minK){var r=vp.getBoundingClientRect();var wide=r.width>640
 function focusItem(id){if(mode==="timeline"){var t=tlPos[id];if(!t&&TLById[id]){TLF[TLById[id].kind]=true;tlFilter();t=tlPos[id];}if(t)focusAt(t.cx,t.cy,1.3);return;}if(mode==="tree"){var p=pos[id];if(p)focusAt(p.x+W/2,p.y+40,1.1);}else{var q=pinAll().find(function(x){return x.id===id});if(q&&q.lat!=null&&SAT&&satMap){var r=vp.getBoundingClientRect(),wide=r.width>640;satMap.flyTo({center:[q.lon,q.lat],zoom:Math.max(satMap.getZoom(),kToZ(12)),padding:wide?{top:0,bottom:0,left:0,right:Math.min(380,r.width)}:{top:0,left:0,right:0,bottom:Math.round(r.height*0.6)},duration:RM?0:1600});}
   else if(q&&q.lat!=null){var r=vp.getBoundingClientRect(),wide=r.width>640;gFly(q.lat,q.lon,Math.max(k,12),wide?(r.width-Math.min(380,r.width))/2:r.width/2,wide?r.height/2:r.height*0.2);}}}
 
+var blinking=false,blinkNext=null;
+function blink(fn){var el=document.getElementById("blink");if(RM||!el){fn();return;}
+  if(blinking){blinkNext=fn;return;}blinking=true;blinkNext=fn;el.classList.remove("opening");el.classList.add("shut");
+  setTimeout(function(){var f=blinkNext;blinkNext=null;f();requestAnimationFrame(function(){requestAnimationFrame(function(){
+    el.classList.add("opening");el.classList.remove("shut");setTimeout(function(){el.classList.remove("opening");blinking=false;if(blinkNext){var g=blinkNext;blinkNext=null;blink(g);}},320);});});},210);}
+function switchTo(m){if(m===mode)return;blink(function(){setMode(m);if(m==="map")globeIn();})}
+/* entering the map: swoop in from deep space to where you left off */
+function globeIn(){if(RM)return;var D=1500,W8=260,ease=function(t){return 1-Math.pow(1-t,3)};
+  if(SAT&&satMap&&satReady){var c=satMap.getCenter(),z=satMap.getZoom();satMap.jumpTo({center:[c.lng+35,c.lat],zoom:Math.min(z,2)-1.6});
+    setTimeout(function(){satMap.easeTo({center:c,zoom:z,duration:D,easing:ease})},W8);return;}
+  if(SAT)return;cancelAnimationFrame(gAnim);var k1=k,l1=gLon,k0=Math.min(k1,1)*0.35;k=k0;gLon=gWrap(l1+35);gQueue();
+  setTimeout(function(){var t0=performance.now();(function step(now){var t=Math.min(1,(now-t0)/D),u=ease(t);k=Math.exp(Math.log(k0)+(Math.log(k1)-Math.log(k0))*u);gLon=gWrap(l1+35*(1-u));gQueue();if(t<1)gAnim=requestAnimationFrame(step);})(t0);},W8);}
 function setMode(m){if(m===mode)return;cancelAnimationFrame(gAnim);views[mode]={tx:tx,ty:ty,k:k,lon:gLon,lat:gLat,ox:gox,oy:goy};closePanel(true);placing=false;vp.classList.remove("placing");
   mode=m;["tree","map","timeline"].forEach(function(x){document.body.classList.toggle("mode-"+x,m===x)});
   document.getElementById("mt").setAttribute("aria-pressed",m==="tree");document.getElementById("mm").setAttribute("aria-pressed",m==="map");document.getElementById("ml").setAttribute("aria-pressed",m==="timeline");
   hint.textContent=HINTS[m];document.getElementById("vt").textContent=SUBS[m];if(m==="map"&&!SAT&&satWanted())setTimeout(function(){setSat(true)},0);document.getElementById("addpin").textContent="Add a pin";render();
   if(views[m]){tx=views[m].tx;ty=views[m].ty;k=views[m].k;if(m==="map"){gLon=views[m].lon;gLat=views[m].lat;gox=views[m].ox;goy=views[m].oy;}apply();}else fit();}
-document.getElementById("mt").onclick=function(){setMode("tree")};
-document.getElementById("mm").onclick=function(){setMode("map")};
-document.getElementById("ml").onclick=function(){setMode("timeline")};
+document.getElementById("mt").onclick=function(){switchTo("tree")};
+document.getElementById("mm").onclick=function(){switchTo("map")};
+document.getElementById("ml").onclick=function(){switchTo("timeline")};
 document.querySelector(".mapkey").addEventListener("click",function(ev){var b=ev.target.closest("button");if(!b)return;
   if(b.dataset.k)filt[b.dataset.k]=!filt[b.dataset.k];else MAPKEYS.forEach(function(r){filt[r[0]]=b.dataset.all==="1"});mapFilter();});mapKeySync();
 document.getElementById("compass").onclick=function(){if(satMap)satMap.easeTo({bearing:0,duration:RM?0:700})};document.getElementById("stMap").onclick=function(){setSat(false)};document.getElementById("terr").onclick=function(){setTerrain(!TERR)};document.getElementById("sun").onclick=function(){setNight(!NIGHT)};NIGHT=nightWanted();document.getElementById("sun").setAttribute("aria-pressed",NIGHT);TERR=terrWanted();document.getElementById("terr").setAttribute("aria-pressed",TERR);document.getElementById("stSat").onclick=function(){setSat(true)};
@@ -853,7 +874,7 @@ var CATS={sec:"Secret project site",gov:"Government building",mil:"Military base
 function TPmap(){return {cia:"m-cia",odni:"m-odni",dia:"m-dia",nasa:"m-nasahq",depsec:"m-pentagon",dod:"m-pentagon",congress:"m-capitol",oversight:"m-capitol",pres:"m-whitehouse",usdis:"m-pentagon",jcs:"m-pentagon"}}
 function isTree(id){return treeAll().some(function(x){return x.id===id})}
 function isPin(id){return pinAll().some(function(x){return x.id===id})}
-function goTo(m,id){if(m==="map"){var p=pinAll().find(function(x){return x.id===id});if(p&&!visible(p)){filt[pinKey(p)]=true;mapFilter();}}setMode(m);open(id);}
+function goTo(m,id){if(m==="map"){var p=pinAll().find(function(x){return x.id===id});if(p&&!visible(p)){filt[pinKey(p)]=true;mapFilter();}}if(m===mode){open(id);return;}blink(function(){setMode(m);open(id);});}
 function open(id,editName){
   var tl=TLById[id];var n=tl?(tl.own?tl:findItem(tl.pid&&!tl.tid?tl.pid:(tl.type==="ev"&&tl.pid?tl.pid:tl.tid))):findItem(id);if(!n)return;
   var cid=n.id,rel=tl||TLById[TLByTid[cid]]||TLById[TLByPid[cid]]||null;
