@@ -48,10 +48,11 @@ button[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber)
 .legend{position:absolute;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--hair);border-radius:8px;padding:8px 11px;font-size:12.5px;color:var(--ink2);display:flex;flex-direction:column;gap:5px;z-index:2;pointer-events:none}
 .legend span{display:flex;align-items:center;gap:8px}
 .legend span[hidden]{display:none}
-.tlkey{pointer-events:auto;gap:2px;padding:6px 6px 8px}
-.tlkey button{display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:5px;padding:3px 6px;min-height:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
-.tlkey button:hover{background:var(--hair)}
-.tlkey [data-k][aria-pressed="false"]{opacity:.38;text-decoration:line-through}
+.fkey{pointer-events:auto;gap:2px;padding:6px 6px 8px}
+.fkey button{display:flex;align-items:center;gap:8px;background:none;border:0;border-radius:5px;padding:3px 6px;min-height:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.fkey button:hover{background:var(--hair)}
+.fkey [data-k][aria-pressed="false"]{opacity:.38;text-decoration:line-through}
+.fkey .kn{margin-left:auto;padding-left:10px;font-size:11.5px;color:var(--ink2);opacity:.75}
 .tlkall{display:flex!important;gap:4px;margin-top:4px;border-top:1px solid var(--hair);padding-top:6px}
 .tlkall button{font-size:12px;color:var(--ink2);text-decoration:underline;padding:2px 6px}
 .tlkall button:disabled{opacity:.35;cursor:default;text-decoration:none}
@@ -224,12 +225,16 @@ header>.tb{min-height:36px}
 (function(){
 /* the timeline key doubles as a filter: each row turns its kind of item on or off */
 var TLKEYS=[["active","sw a","Active UAP office"],["closed","sw c","Closed program"],["secret","sw s","Secret project"],["uap","lg-uap","Sighting or incident"],["sec","lg-sec","Secret project event"],["mil","lg-milu","Incident at a base"],["gov","lg-gov","Milestone"],["civ","lg-civ","Civilian or media milestone"],["book","lg-book","Book"]];
+var MAPKEYS=[["gov","lg-gov","Government building"],["mil","lg-mil","Military base"],["milu","lg-milu","Base with UAP history"],["uap","lg-uap","UAP or anomaly site"],["sec","lg-sec","Secret project site"],["civ","lg-civ","Civilian research group"],["mine","lg-mine","Your pin"]];
+function pinKey(p){return p.c==="mil"?(p.u?"milu":"mil"):p.c}
+function keySync(sel,keys,on){document.querySelectorAll(sel+" [data-k]").forEach(function(b){b.setAttribute("aria-pressed",on[b.dataset.k]!==false)});
+  document.querySelector(sel+' [data-all="1"]').disabled=keys.every(function(r){return on[r[0]]!==false});document.querySelector(sel+' [data-all="0"]').disabled=keys.every(function(r){return on[r[0]]===false});}
+function mapKeySync(){keySync(".mapkey",MAPKEYS,filt)}
+function mapFilter(){try{localStorage.setItem("watcher-mapkeys",JSON.stringify(filt))}catch(e){}mapKeySync();if(mode==="map")renderMap();}
 var TLF={};TLKEYS.forEach(function(r){TLF[r[0]]=true});
 try{var tlf0=JSON.parse(localStorage.getItem("watcher-tlkeys")||"{}");Object.keys(tlf0).forEach(function(k){if(k in TLF)TLF[k]=!!tlf0[k]})}catch(e){}
 function tlShown(e){return TLF[e.kind]!==false}
-function tlKeySync(){document.querySelectorAll(".tlkey [data-k]").forEach(function(b){b.setAttribute("aria-pressed",TLF[b.dataset.k])});
-  var all=TLKEYS.every(function(r){return TLF[r[0]]}),none=TLKEYS.every(function(r){return !TLF[r[0]]});
-  document.querySelector('.tlkey [data-all="1"]').disabled=all;document.querySelector('.tlkey [data-all="0"]').disabled=none;}
+function tlKeySync(){keySync(".tlkey",TLKEYS,TLF)}
 function tlFilter(){try{localStorage.setItem("watcher-tlkeys",JSON.stringify(TLF))}catch(e){}tlKeySync();layoutTL();if(mode==="timeline"){renderTimeline();apply();}}
 var BASE=[
 {id:"gov",p:null,t:"United States government",s:"Federal branches",k:"root",d:["The two branches that matter most for UAP work: the executive branch runs the offices, and Congress creates and funds them."]},
@@ -313,13 +318,13 @@ document.body.insertAdjacentHTML("beforeend",
 '<div class="tools"><div class="seg" role="group" aria-label="View"><button id="mt" aria-pressed="true">Org chart</button><button id="mm" aria-pressed="false">Map</button><button id="ml" aria-pressed="false">Timeline</button></div>'+
 '<button class="sq" id="zo" aria-label="Zoom out">&minus;</button><button class="sq" id="zi" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>'+
 '<div class="tb"><button class="treeonly" id="lin" aria-pressed="false">Show lineage</button>'+
-'<span class="maponly tb" style="width:auto"><span class="seg" role="group" aria-label="Map style"><button id="stMap" aria-pressed="true">Map</button><button id="stSat" aria-pressed="false">Satellite</button></span><button id="terr" class="terr" aria-pressed="false" title="Raise mountains and buildings and tilt the view">3D terrain</button><button id="sun" class="terr" aria-pressed="true" title="Shade the side of the Earth where it is night right now">Day and night</button><button class="chip" data-f="gov" aria-pressed="true">Government ('+nGov+')</button><button class="chip" data-f="mil" aria-pressed="true">Military ('+nMil+')</button><button class="chip" data-f="uap" aria-pressed="true">UAP and anomalies ('+nUap+')</button><button class="chip" data-f="sec" aria-pressed="true">Secret projects ('+nSec+')</button><button class="chip" data-f="civ" aria-pressed="true">Civilian groups ('+nCiv+')</button><button class="chip" data-f="mine" aria-pressed="true">Your pins</button><button id="addpin">Add a pin</button></span></div></header>'+
+'<span class="maponly tb" style="width:auto"><span class="seg" role="group" aria-label="Map style"><button id="stMap" aria-pressed="true">Map</button><button id="stSat" aria-pressed="false">Satellite</button></span><button id="terr" class="terr" aria-pressed="false" title="Raise mountains and buildings and tilt the view">3D terrain</button><button id="sun" class="terr" aria-pressed="true" title="Shade the side of the Earth where it is night right now">Day and night</button><button id="addpin">Add a pin</button></span></div></header>'+
 '<div id="vp"><div id="world"><svg id="edges"></svg></div>'+
 '<div id="mapw"><canvas id="globe" aria-hidden="true"></canvas><div id="sat"></div><button id="compass" title="Face north" aria-label="Face north"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(239,230,210,.25)"/><g id="cneedle"><text x="26" y="13" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="10" fill="#FF7A45">N</text><path d="M26 15 L31 27 L26 25 L21 27 Z" fill="#FF7A45"/><path d="M26 39 L31 27 L26 29 L21 27 Z" fill="#EFE6D2"/></g></svg></button><div id="pins"></div></div>'+
 '<div id="tlw"><svg id="tlsvg" aria-hidden="true"></svg><div id="tlitems"></div></div>'+
 '<div class="legend treeonly"><span><i class="sw a"></i>Active UAP office</span><span><i class="sw c"></i>Closed program</span><span><i class="sw s"></i>Secret project</span><span><i class="sw"></i>Parent body</span><span id="lgl" hidden><i class="sw l"></i>Succeeded by</span></div>'+
-'<div class="legend maponly"><span><i class="lg-gov"></i>Government building</span><span><i class="lg-mil"></i>Military base</span><span><i class="lg-milu"></i>Base with UAP history</span><span><i class="lg-uap"></i>UAP or anomaly site</span><span><i class="lg-sec"></i>Secret project site</span><span><i class="lg-civ"></i>Civilian research group</span><span><i class="lg-mine"></i>Your pin</span></div>'+
-'<div class="legend tlonly tlkey" role="group" aria-label="Show or hide on the timeline">'+TLKEYS.map(function(r){return '<button data-k="'+r[0]+'" aria-pressed="true"><i class="'+r[1]+'"></i>'+r[2]+'</button>'}).join("")+'<span class="tlkall"><button data-all="1">Show all</button><button data-all="0">Hide all</button></span></div>'+
+'<div class="legend maponly mapkey fkey" role="group" aria-label="Show or hide on the map">'+MAPKEYS.map(function(r){var n=r[0]==="mine"?"":MAP.pins.filter(function(p){return pinKey(p)===r[0]}).length;return '<button data-k="'+r[0]+'" aria-pressed="true"><i class="'+r[1]+'"></i>'+r[2]+(n!==""?'<span class="kn">'+n+'</span>':'')+'</button>'}).join("")+'<span class="tlkall"><button data-all="1">Show all</button><button data-all="0">Hide all</button></span></div>'+
+'<div class="legend tlonly tlkey fkey" role="group" aria-label="Show or hide on the timeline">'+TLKEYS.map(function(r){return '<button data-k="'+r[0]+'" aria-pressed="true"><i class="'+r[1]+'"></i>'+r[2]+'</button>'}).join("")+'<span class="tlkall"><button data-all="1">Show all</button><button data-all="0">Hide all</button></span></div>'+
 '<div class="hint" id="hint"></div>'+
 '<aside id="panel" aria-label="Details"></aside></div>');
 
@@ -688,7 +693,8 @@ function renderTimeline(){
 }
 var pos={},bounds={w:0,h:0},showLin=false,selId=null,mode="tree",placing=false;
 var views={tree:null,map:null},tx=0,ty=0,k=1;
-var filt={gov:true,mil:true,uap:true,sec:true,civ:true,mine:true};
+var filt={};MAPKEYS.forEach(function(r){filt[r[0]]=true});
+try{var mf0=JSON.parse(localStorage.getItem("watcher-mapkeys")||"{}");Object.keys(mf0).forEach(function(k){if(k in filt)filt[k]=!!mf0[k]})}catch(e){}
 var SUBS={tree:"Who runs UAP work in the U.S. government",map:"Bases, sightings, and secret sites around the world",timeline:"Programs, incidents, and books since 1940"};
 var HINTS={tree:"Drag to pan, pinch or scroll to zoom. Tap any box for details and notes.",map:"Drag to spin the globe, scroll or pinch to zoom. Place names, then U.S. county, township, and town lines, appear as you zoom in. Switch to Satellite for real imagery, and try 3D terrain (right-drag or two-finger drag to tilt). Pins mark major sites and notable cases, not every one.",timeline:"Drag sideways to travel through time. Tap any bar or event for details and links to the org chart and map."};
 
@@ -763,7 +769,7 @@ function renderTree(){
     paths+='<path class="lin" d="'+dd+'"/>';}}
   svg.innerHTML=paths;
 }
-function visible(p){if(p.c==="mil")return filt.mil||(filt.uap&&p.u);return filt[p.c];}
+function visible(p){return filt[pinKey(p)]!==false;}
 function renderMap(){
   var h="",list=[];
   pinAll().forEach(function(p){if(!visible(p)||p.lat==null)return;list.push(p);
@@ -801,12 +807,13 @@ function setMode(m){if(m===mode)return;cancelAnimationFrame(gAnim);views[mode]={
 document.getElementById("mt").onclick=function(){setMode("tree")};
 document.getElementById("mm").onclick=function(){setMode("map")};
 document.getElementById("ml").onclick=function(){setMode("timeline")};
-document.querySelectorAll(".chip").forEach(function(c){c.onclick=function(){var f=c.dataset.f;filt[f]=!filt[f];c.setAttribute("aria-pressed",filt[f]);renderMap();}});
+document.querySelector(".mapkey").addEventListener("click",function(ev){var b=ev.target.closest("button");if(!b)return;
+  if(b.dataset.k)filt[b.dataset.k]=!filt[b.dataset.k];else MAPKEYS.forEach(function(r){filt[r[0]]=b.dataset.all==="1"});mapFilter();});mapKeySync();
 document.getElementById("compass").onclick=function(){if(satMap)satMap.easeTo({bearing:0,duration:RM?0:700})};document.getElementById("stMap").onclick=function(){setSat(false)};document.getElementById("terr").onclick=function(){setTerrain(!TERR)};document.getElementById("sun").onclick=function(){setNight(!NIGHT)};NIGHT=nightWanted();document.getElementById("sun").setAttribute("aria-pressed",NIGHT);TERR=terrWanted();document.getElementById("terr").setAttribute("aria-pressed",TERR);document.getElementById("stSat").onclick=function(){setSat(true)};
 document.getElementById("addpin").onclick=function(){placing=!placing;vp.classList.toggle("placing",placing);this.textContent=placing?"Cancel":"Add a pin";hint.textContent=placing?"Tap the globe where the new pin goes.":HINTS.map;};
 
 var ptrs=new Map(),moved=0,startDist=0,startK=1,downTarget=null,downPt=null;
-vp.addEventListener("pointerdown",function(e){if(e.target.closest("#panel,.tlkey"))return;if(mode==="map"&&SAT&&!e.target.closest(".pin"))return;vp.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;downTarget=e.target.closest(".node,.pin,.tlb,.tle");downPt={x:e.clientX,y:e.clientY};
+vp.addEventListener("pointerdown",function(e){if(e.target.closest("#panel,.fkey"))return;if(mode==="map"&&SAT&&!e.target.closest(".pin"))return;vp.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;downTarget=e.target.closest(".node,.pin,.tlb,.tle");downPt={x:e.clientX,y:e.clientY};
   if(ptrs.size===2){var v=[...ptrs.values()];startDist=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y);startK=k;}vp.classList.add("drag");});
 vp.addEventListener("pointermove",function(e){if(!ptrs.has(e.pointerId))return;var prev=ptrs.get(e.pointerId);var dx=e.clientX-prev.x,dy=e.clientY-prev.y;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved+=Math.abs(dx)+Math.abs(dy);
   var r=vp.getBoundingClientRect();
@@ -814,7 +821,7 @@ vp.addEventListener("pointermove",function(e){if(!ptrs.has(e.pointerId))return;v
   else if(ptrs.size===2){var v=[...ptrs.values()];var dist=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y);var mx=(v[0].x+v[1].x)/2-r.left,my=(v[0].y+v[1].y)/2-r.top;
     if(startDist>0){zoomAt((startK*dist/startDist)/k,mx,my);}if(mode==="map")gRot(dx/2,dy/2);else{tx+=dx/2;ty+=dy/2;apply();}}});
 function placePin(lon,lat){placing=false;vp.classList.remove("placing");document.getElementById("addpin").textContent="Add a pin";hint.textContent=HINTS.map;
-  var nid="p"+Date.now().toString(36);state.pins.push({id:nid,lat:Math.round(lat*1e4)/1e4,lon:Math.round(lon*1e4)/1e4,t:"New pin",s:""});filt.mine=true;document.querySelector('.chip[data-f="mine"]').setAttribute("aria-pressed","true");save("Pin added");open(nid,true);}
+  var nid="p"+Date.now().toString(36);state.pins.push({id:nid,lat:Math.round(lat*1e4)/1e4,lon:Math.round(lon*1e4)/1e4,t:"New pin",s:""});filt.mine=true;mapFilter();save("Pin added");open(nid,true);}
 function up(e){if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)startDist=0;
   if(!ptrs.size){vp.classList.remove("drag");if(moved<8){
     if(mode==="map"&&placing&&downPt&&!e.target.closest(".legend")){var r=vp.getBoundingClientRect(),ll=gInv(downPt.x-r.left,downPt.y-r.top);if(!ll)return;placePin(ll[0],ll[1]);}
@@ -844,7 +851,7 @@ var CATS={sec:"Secret project site",gov:"Government building",mil:"Military base
 function TPmap(){return {cia:"m-cia",odni:"m-odni",dia:"m-dia",nasa:"m-nasahq",depsec:"m-pentagon",dod:"m-pentagon",congress:"m-capitol",oversight:"m-capitol",pres:"m-whitehouse",usdis:"m-pentagon",jcs:"m-pentagon"}}
 function isTree(id){return treeAll().some(function(x){return x.id===id})}
 function isPin(id){return pinAll().some(function(x){return x.id===id})}
-function goTo(m,id){if(m==="map"){var p=pinAll().find(function(x){return x.id===id});if(p&&!visible(p)){var f=p.c;filt[f]=true;var ch=document.querySelector('.chip[data-f="'+f+'"]');if(ch)ch.setAttribute("aria-pressed","true");}}setMode(m);open(id);}
+function goTo(m,id){if(m==="map"){var p=pinAll().find(function(x){return x.id===id});if(p&&!visible(p)){filt[pinKey(p)]=true;mapFilter();}}setMode(m);open(id);}
 function open(id,editName){
   var tl=TLById[id];var n=tl?(tl.own?tl:findItem(tl.pid&&!tl.tid?tl.pid:(tl.type==="ev"&&tl.pid?tl.pid:tl.tid))):findItem(id);if(!n)return;
   var cid=n.id,rel=tl||TLById[TLByTid[cid]]||TLById[TLByPid[cid]]||null;
