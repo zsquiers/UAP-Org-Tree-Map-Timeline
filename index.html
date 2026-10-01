@@ -96,14 +96,10 @@ body:not(.mode-tree) #world,body:not(.mode-map) #mapw,body:not(.mode-timeline) #
 .e{transition:stroke .25s ease-in-out}
 body,header,#vp,.legend,#panel,textarea,input,.pill,.pin .lb{transition:background-color .25s ease-in-out,color .25s ease-in-out,border-color .25s ease-in-out}
 button{transition:background-color .12s ease-out,color .12s ease-out,border-color .12s ease-out}
-/* view changes: an eyelid blink, after the Watcher eye */
-#blink{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
-#blink.shut{pointer-events:auto}
-#blink i{position:absolute;left:-30%;width:160%;height:64%;background:#0A1120;transition:transform .2s cubic-bezier(.55,0,.8,.3)}
-#blink .lt{top:0;border-radius:0 0 50% 50%/0 0 42% 42%;transform:translateY(-104%);box-shadow:0 3px 0 rgba(233,196,120,.6)}
-#blink .lbt{bottom:0;border-radius:50% 50% 0 0/42% 42% 0 0;transform:translateY(104%);box-shadow:0 -3px 0 rgba(233,196,120,.6)}
-#blink.shut i{transform:translateY(0)}
-#blink.opening i{transition:transform .3s cubic-bezier(.15,.7,.3,1)}
+/* view changes: a quick flash of light covers the switch */
+#blink{position:fixed;inset:0;z-index:60;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,#FFFDF6 0%,#FFF6E2 55%,#F3E6CC 100%);opacity:0;transition:opacity .09s ease-in}
+#blink.shut{opacity:.92;pointer-events:auto}
+#blink.opening{transition:opacity .26s ease-out}
 body.mode-map{--bg:#05070D;--grid:transparent;--ink:#EFE6D2;--ink2:#B3A88F;--card:#121826;--line:#8C7A56;--hair:rgba(239,230,210,.16);--panel:#0C111C;--focus:#F2C46D;--land:#D8C6A0;--mil:#6F9CC4;--civ:#5ED3C3;--amber:#FF7A45;--amber-bg:rgba(255,122,69,.15);--sec:#B98CFF;--sec-bg:#221A33}
 .mode-map h1,.mode-map .ph h2{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:600;letter-spacing:0}
 .mode-map h1{font-size:25px}
@@ -330,7 +326,7 @@ document.body.insertAdjacentHTML("beforeend",
 '<button class="sq" id="zo" aria-label="Zoom out">&minus;</button><button class="sq" id="zi" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>'+
 '<div class="tb"><button class="treeonly" id="lin" aria-pressed="false">Show lineage</button>'+
 '<span class="maponly tb" style="width:auto"><span class="seg" role="group" aria-label="Map style"><button id="stMap" aria-pressed="true">Map</button><button id="stSat" aria-pressed="false">Satellite</button></span><button id="terr" class="terr" aria-pressed="false" title="Raise mountains and buildings and tilt the view">3D terrain</button><button id="sun" class="terr" aria-pressed="true" title="Shade the side of the Earth where it is night right now">Day and night</button><button id="addpin">Add a pin</button></span></div></header>'+
-'<div id="blink" aria-hidden="true"><i class="lt"></i><i class="lbt"></i></div><div id="vp"><div id="world"><svg id="edges"></svg></div>'+
+'<div id="blink" aria-hidden="true"></div><div id="vp"><div id="world"><svg id="edges"></svg></div>'+
 '<div id="mapw"><canvas id="globe" aria-hidden="true"></canvas><div id="sat"></div><button id="compass" title="Face north" aria-label="Face north"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(239,230,210,.25)"/><g id="cneedle"><text x="26" y="13" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="10" fill="#FF7A45">N</text><path d="M26 15 L31 27 L26 25 L21 27 Z" fill="#FF7A45"/><path d="M26 39 L31 27 L26 29 L21 27 Z" fill="#EFE6D2"/></g></svg></button><div id="pins"></div></div>'+
 '<div id="tlw"><svg id="tlsvg" aria-hidden="true"></svg><div id="tlitems"></div></div>'+
 '<div class="legend treeonly"><span><i class="sw a"></i>Active UAP office</span><span><i class="sw c"></i>Closed program</span><span><i class="sw s"></i>Secret project</span><span><i class="sw"></i>Parent body</span><span id="lgl" hidden><i class="sw l"></i>Succeeded by</span></div>'+
@@ -814,10 +810,10 @@ var blinking=false,blinkNext=null;
 function blink(fn){var el=document.getElementById("blink");if(RM||!el){fn();return;}
   if(blinking){blinkNext=fn;return;}blinking=true;blinkNext=fn;el.classList.remove("opening");el.classList.add("shut");
   setTimeout(function(){var f=blinkNext;blinkNext=null;f();requestAnimationFrame(function(){requestAnimationFrame(function(){
-    el.classList.add("opening");el.classList.remove("shut");setTimeout(function(){el.classList.remove("opening");blinking=false;if(blinkNext){var g=blinkNext;blinkNext=null;blink(g);}},320);});});},210);}
+    el.classList.add("opening");el.classList.remove("shut");setTimeout(function(){el.classList.remove("opening");blinking=false;if(blinkNext){var g=blinkNext;blinkNext=null;blink(g);}},270);});});},95);}
 function switchTo(m){if(m===mode)return;blink(function(){setMode(m);if(m==="map")globeIn();})}
 /* entering the map: swoop in from deep space to where you left off */
-function globeIn(){if(RM)return;var D=1500,W8=260,ease=function(t){return 1-Math.pow(1-t,3)};
+function globeIn(){if(RM)return;var D=1500,W8=60,ease=function(t){return 1-Math.pow(1-t,3)};
   if(SAT&&satMap&&satReady){var c=satMap.getCenter(),z=satMap.getZoom();satMap.jumpTo({center:[c.lng+35,c.lat],zoom:Math.min(z,2)-1.6});
     setTimeout(function(){satMap.easeTo({center:c,zoom:z,duration:D,easing:ease})},W8);return;}
   if(SAT)return;cancelAnimationFrame(gAnim);var k1=k,l1=gLon,k0=Math.min(k1,1)*0.35;k=k0;gLon=gWrap(l1+35);gQueue();
